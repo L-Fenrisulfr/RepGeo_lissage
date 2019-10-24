@@ -23,6 +23,29 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    /**
+     * @brief getTangent
+     * @param angle en degrées
+     * @return tangente en radians
+     */
+    double getTangent(double angle);
+
+    /**
+     * @brief getEdgeIdx
+     * @param _mesh
+     * @param v_idx, un vertex
+     * @param vi_idx, un autre vertex
+     * @return id de l'edge en commun
+     */
+    EdgeHandle getEdgeHandle(MyMesh * _mesh, unsigned int v_idx, unsigned int vi_idx);
+
+    FaceHandle getFaceHandle(MyMesh * _mesh, HalfedgeHandle heh_idx);
+
+    void getHalfEdgesHandle(MyMesh *_mesh, EdgeHandle eh, HalfedgeHandle * heh);
+
+    double somCots(MyMesh * _mesh, unsigned int v_idx, unsigned int vi_idx);
+
+
 private slots:
     void on_pushButton_clicked();
 
