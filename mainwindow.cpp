@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
+#define PI 3.14159265
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -11,7 +11,53 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+double MainWindow::cot(double angle)
+{
+    return 1/tan(angle);
+}
 
+void MainWindow::approximationCot(MyMesh *_mesh)
+{
+
+}
+double MainWindow::getTangent(double angle)
+{
+    return 1 / tan ( angle * PI / 180.0 );
+}
+
+EdgeHandle MainWindow::getEdgeHandle(MyMesh * _mesh, unsigned int v_idx, unsigned int vi_idx)
+{
+    //QVector<MyMesh::EdgeHandle> vect_eh;
+    for (MyMesh::VertexEdgeIter ve_it = _mesh->ve_iter(_mesh->vertex_handle(v_idx)); ve_it.is_valid(); ve_it++) {
+        //vect_eh.push_back(*ve_it);
+        for (MyMesh::VertexEdgeIter ve_it_to_compare = _mesh->ve_iter(_mesh->vertex_handle(vi_idx)); ve_it_to_compare.is_valid(); ve_it_to_compare++) {
+            if (ve_it == ve_it_to_compare)
+                return *ve_it;
+        }
+    }
+}
+
+FaceHandle MainWindow::getFaceHandle(MyMesh *_mesh, HalfedgeHandle heh)
+{
+    return _mesh->face_handle(heh);
+}
+
+void MainWindow::getHalfEdgesHandle(MyMesh *_mesh, EdgeHandle eh, HalfedgeHandle * heh)
+{
+    heh[0] = _mesh->halfedge_handle(eh, 0);
+    heh[1] = _mesh->halfedge_handle(eh, 1);
+}
+
+// angle, trouvé opposé
+double MainWindow::somCots(MyMesh * _mesh, unsigned int v_idx, unsigned int vi_idx)
+{
+    // trouvé les angles-vertex
+    EdgeHandle eh = getEdgeHandle(_mesh, v_idx, vi_idx);
+
+    HalfedgeHandle heh[2];
+    getHalfEdgesHandle(_mesh, eh, heh);
+    getFaceHandle(_mesh, heh[0]);
+}
 float MainWindow::barycentriqueArea(VertexHandle v, MyMesh *_mesh)
 {
 
@@ -55,8 +101,131 @@ float MainWindow::barycentriqueArea(VertexHandle v, MyMesh *_mesh)
         }
     }
     return area/3.0;
+}
 
+QVector<MyMesh::VertexHandle> MainWindow::sommetOpp(MyMesh *_mesh,
+                              MyMesh::VertexHandle pointV,
+                              MyMesh::FaceHandle face1,
+                              MyMesh::FaceHandle face2)
+{
+    double distMax = 0;
+    QVector<MyMesh::VertexHandle> points;
+    for (MyMesh::FaceEdgeIter fe = _mesh->fe_begin(face1);
+         fe.is_valid();fe++)
+    {
+        MyMesh::HalfedgeHandle he = _mesh->halfedge_handle(fe);
+        if(_mesh->to_vertex_handle(he) == pointV)
+        {
+            points.push_back(_mesh->from_vertex_handle(he));
+        }
+        else if(_mesh->from_vertex_handle(he) == pointV)
+        {
+            points.push_back(_mesh->to_vertex_handle(he));
+        }
 
+    }
+    for (MyMesh::FaceEdgeIter fe = _mesh->fe_begin(face2);
+         fe.is_valid();fe++)
+    {
+        MyMesh::HalfedgeHandle he = _mesh->halfedge_handle(fe);
+        if(_mesh->to_vertex_handle(he) == pointV)
+        {
+            bool exist = false;
+            for(int i = 0; i< points.size();i++)
+            {
+                if(points.at(i) == _mesh->from_vertex_handle(he))
+                {
+                    exist == true;
+                    points.remove(i);
+                }
+            }
+            if(!exist)
+            {
+                points.push_back(_mesh->from_vertex_handle(he));
+            }
+
+        }
+        else if(_mesh->from_vertex_handle(he) == pointV)
+        {
+
+            for(int i = 0; i< points.size();i++)
+            {
+                if(points.at(i) == _mesh->to_vertex_handle(he))
+                {
+                    bool exist = false;
+                    for(int i = 0; i< points.size();i++)
+                    {
+                        if(points.at(i) == _mesh->to_vertex_handle(he))
+                        {
+                            exist = true;
+                            points.remove(i);
+                        }
+                    }
+                    if(!exist)
+                    {
+                        points.push_back(_mesh->to_vertex_handle(he));
+                        //exist = false;
+                    }
+                }
+            }
+        }
+    }
+    return points;
+}
+
+double MainWindow::angle(MyMesh *_mesh, MyMesh::FaceHandle fh, MyMesh::VertexHandle vertex)
+{
+    double angle = 0;
+    QVector<MyMesh::VertexHandle> list_edge;
+    for(MyMesh::FaceEdgeIter fe = _mesh->fe_begin(fh);fe.is_valid();fe++)
+    {
+        MyMesh::HalfedgeHandle he = _mesh->halfedge_handle(fe);
+        if(_mesh->from_vertex_handle(he) == vertex)
+        {
+            list_edge.push_back(_mesh->to_vertex_handle(he));
+        }
+        if(_mesh->to_vertex_handle(he) == vertex)
+        {
+            list_edge.push_back(_mesh->from_vertex_handle(he));
+        }
+    }
+    if(list_edge.size()>1)
+    {
+        MyMesh::Point p0 = _mesh->point(vertex);
+        MyMesh::Point p1 = _mesh->point(list_edge.at(0));
+        MyMesh::Point p2 = _mesh->point(list_edge.at(1));
+
+        MyMesh::Point V1 = p1 - p0;
+        MyMesh::Point V2 = p2 - p0;
+
+        QVector<float> norme;
+
+        float tmp = V1[0]*V1[0]+V1[1]*V1[1]+V1[2]*V1[2];
+        norme.append(sqrt(tmp)); //sqrt(x^2+y^2+z^2) : C'est la norme du premier vecteur
+
+        tmp = V2[0]*V2[0]+V2[1]*V2[1]+V2[2]*V2[2];
+        norme.append(sqrt(tmp)); //C'est la norme du second vecteurs
+
+        //normalisation des vecteur :  chacun des vecteur / par la norme
+
+        V1[0] = V1[0]/norme[0];
+        V1[1] = V1[1]/norme[0];
+        V1[2] = V1[2]/norme[0];
+
+        V2[0] = V2[0]/norme[1];
+        V2[1] = V2[1]/norme[1];
+        V2[2] = V2[2]/norme[1];
+        float a = V1[0]*V2[0+3];
+        float b = V1[1]*V2[1];
+        float c = V1[2]*V2[2];
+
+        float prodScal = a+b+c;
+        abs(prodScal); //garantie que le produit scalaire soit positif
+
+        angle = acos(prodScal)/**180/M_PI*/;
+         //en radians
+    }
+    return angle;
 }
 
 void MainWindow::on_pushButton_clicked()
