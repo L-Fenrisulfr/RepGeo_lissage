@@ -30,6 +30,7 @@ public:
     QVector<MyMesh::VertexHandle> sommetOpp(MyMesh *_mesh,MyMesh::VertexHandle pointV, MyMesh::FaceHandle face1, MyMesh::FaceHandle face2);
     MyMesh::VertexHandle getSomOpp(MyMesh * _mesh,MyMesh::FaceHandle face1,
                                    MyMesh::FaceHandle face2, MyMesh::VertexHandle vh);
+    float angleEE(MyMesh* _mesh, int vertexID,  int faceID);
     double angle(MyMesh * _mesh, MyMesh::FaceHandle fh, MyMesh::VertexHandle vertex);
 
     /**

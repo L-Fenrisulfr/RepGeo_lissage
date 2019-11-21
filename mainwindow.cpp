@@ -85,12 +85,9 @@ double MainWindow::somCots(MyMesh * _mesh, unsigned int v_idx, unsigned int vi_i
 
 float MainWindow::faceArea(MyMesh* _mesh, int faceID)
 {
-    /* **** à compléter ! **** */
-    qDebug() << __FUNCTION__;
 
     QVector<MyMesh::Point> * listPoints = new QVector<MyMesh::Point>();
     for (MyMesh::FaceVertexIter curVert = _mesh->fv_iter(_mesh->face_handle(static_cast<unsigned int>(faceID))); curVert.is_valid(); curVert ++) {
-        //qDebug() << "    vertID :" << (*curVert).idx();
         listPoints->push_back(_mesh->point(*curVert));
     }
 
@@ -297,6 +294,31 @@ MyMesh::VertexHandle MainWindow::getSomOpp(MyMesh *_mesh, MyMesh::FaceHandle fac
     return opp;
 }
 
+float MainWindow::angleEE(MyMesh* _mesh, int vertexID,  int faceID)
+{
+
+    QVector<MyMesh::Point> * listPoints = new QVector<MyMesh::Point>();
+    for (MyMesh::FaceVertexIter curVert = _mesh->fv_iter(_mesh->face_handle(static_cast<unsigned int>(faceID))); curVert.is_valid(); curVert ++) {
+        if (*curVert != _mesh->vertex_handle(static_cast<unsigned int>(vertexID))) {
+            listPoints->push_back(_mesh->point(*curVert));
+        }
+    }
+
+    MyMesh::Point originPoint = _mesh->point(_mesh->vertex_handle(static_cast<unsigned int>(vertexID)));
+    //qDebug() << __FUNCTION__ << "norm :" << static_cast<double>(((listPoints->at(0) - originPoint) | (listPoints->at(1) - originPoint)).norm());
+
+    float norm_v1 = (listPoints->at(0) - originPoint).norm();
+    float norm_v2 = (listPoints->at(1) - originPoint).norm();
+
+    float angle = static_cast<float>( acos( ((listPoints->at(0) - originPoint)/norm_v1) | ((listPoints->at(1) - originPoint)/norm_v2) ) );
+
+
+    //qDebug() << __FUNCTION__ << "angle :" << angle;
+    listPoints->clear();
+    delete listPoints;
+
+    return angle;
+}
 
 double MainWindow::angle(MyMesh *_mesh, MyMesh::FaceHandle fh, MyMesh::VertexHandle vertex)
 {
@@ -427,7 +449,7 @@ void MainWindow::on_pushButton_cotangent_clicked()
     MyMesh::Point dsum(0,0,0);
     for(MyMesh::VertexIter v = mesh_.vertices_begin();v!=mesh_.vertices_end();v++)
     {
-        float a = barycentriqueArea(*v,&mesh_);
+        float a = barycentricArea(&mesh_, v->idx());
         dsum+=1/(2*a) * approximationCot(&mesh_,*v);
     }
     qDebug()<<"DELTA SUM :"<<dsum[0];
