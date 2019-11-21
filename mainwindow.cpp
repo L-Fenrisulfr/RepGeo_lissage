@@ -41,7 +41,7 @@ MyMesh::Point MainWindow::approximationCot(MyMesh *_mesh,MyMesh::VertexHandle vh
                 vertexs = sommetOpp(&mesh_,vh,faces.at(i),faces.at(i+1));
                 sum += (cot(angleEE(_mesh,oppA.idx(),faces.at(i).idx())) +
                         cot(angleEE(_mesh,oppB.idx(),faces.at(i).idx()))) *
-                        (_mesh->point(vh)-_mesh->point(opp));
+                        (_mesh->point(opp)-_mesh->point(vh));
             }
             else
             {
@@ -469,6 +469,33 @@ void MainWindow::on_pushButton_cotangent_clicked()
 
         deltasum.push_back(dsum);
     }
+    GLuint* IndiceArray = new GLuint[mesh_.n_faces() * 3];
 
+    MyMesh::ConstFaceIter fIt(mesh_.faces_begin()), fEnd(mesh_.faces_end());
+    MyMesh::ConstFaceVertexIter fvIt;
 
+    int i = 0;
+    for(MyMesh::VertexIter v = mesh_.vertices_begin();v!=mesh_.vertices_end();v++)
+    {
+        MyMesh::Point x = mesh_.point(*v);
+        float h = 0.01;
+        float y = 0.01;
+        mesh_.point(*v) = x + h * y * deltasum.at(i);
+        i++;
+    }
+
+    int y = 0;
+    for (; fIt!=fEnd; ++fIt)
+    {
+        fvIt = mesh_.cfv_iter(*fIt);
+        IndiceArray[y] = fvIt->idx(); y++; ++fvIt;
+        IndiceArray[y] = fvIt->idx(); y++; ++fvIt;
+        IndiceArray[y] = fvIt->idx(); y++;
+    }
+    GLfloat* cols = new GLfloat[mesh_.n_vertices() * 3];
+    for(int c = 0; c < mesh_.n_vertices() * 3; c = c + 3)
+    {
+        cols[c] = 0.5; cols[c+1] = 0.5; cols[c+2] = 0.5;
+    }
+    ui->widget->loadMesh((GLfloat*)mesh_.points(), cols, mesh_.n_vertices() * 3, IndiceArray, mesh_.n_faces() * 3);
 }
