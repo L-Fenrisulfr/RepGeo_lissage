@@ -33,11 +33,19 @@ MyMesh::Point MainWindow::approximationCot(MyMesh *_mesh,MyMesh::VertexHandle vh
             if(faces.size()>1)
             {
                 MyMesh::VertexHandle opp = getSomOpp(_mesh,faces.at(i),faces.at(i+1),vh);
+                qDebug()<<"opp id : "<<opp.idx();
+                MyMesh::VertexHandle oppA = sommetOpp(&mesh_,vh,faces.at(i),faces.at(i+1)).at(0);
+                MyMesh::VertexHandle oppB = sommetOpp(&mesh_,vh,faces.at(i),faces.at(i+1)).at(1);
+                qDebug()<<"oppA id : "<<oppA.idx()<<"oppB id : "<<oppB.idx();
                 //MyMesh::VertexHandle opp = vh;
                 vertexs = sommetOpp(&mesh_,vh,faces.at(i),faces.at(i+1));
-                sum += (angle(_mesh,faces.at(i),vertexs.at(0)) +
-                        angle(_mesh,faces.at(i),vertexs.at(1)) )*
+                sum += (cot(angleEE(_mesh,oppA.idx(),faces.at(i).idx())) +
+                        cot(angleEE(_mesh,oppB.idx(),faces.at(i).idx()))) *
                         (_mesh->point(vh)-_mesh->point(opp));
+            }
+            else
+            {
+                qDebug()<<"FACES SIZE : "<<faces.size();
             }
         }
         //sum = 1/(2*a) * sum;
@@ -82,12 +90,14 @@ double MainWindow::somCots(MyMesh * _mesh, unsigned int v_idx, unsigned int vi_i
     getHalfEdgesHandle(_mesh, eh, heh);
     getFaceHandle(_mesh, heh[0]);
 }
-
 float MainWindow::faceArea(MyMesh* _mesh, int faceID)
 {
+    /* **** à compléter ! **** */
+    //qDebug() << __FUNCTION__;
 
     QVector<MyMesh::Point> * listPoints = new QVector<MyMesh::Point>();
     for (MyMesh::FaceVertexIter curVert = _mesh->fv_iter(_mesh->face_handle(static_cast<unsigned int>(faceID))); curVert.is_valid(); curVert ++) {
+        //qDebug() << "    vertID :" << (*curVert).idx();
         listPoints->push_back(_mesh->point(*curVert));
     }
 
@@ -113,8 +123,8 @@ float MainWindow::barycentriqueArea(VertexHandle v, MyMesh *_mesh)
 {
 
     QVector <int> neigborList;
-    int produitVect[3];
-    float area;
+    float produitVect[3];
+    float area = 0.0;
 
     for(MyMesh::VertexFaceIter vf_iter = _mesh->vf_iter(v); vf_iter.is_valid(); vf_iter ++)
     {
@@ -133,7 +143,7 @@ float MainWindow::barycentriqueArea(VertexHandle v, MyMesh *_mesh)
             //on récupère les 2 vecteurs U et V de la faces courante
 
             //vectorU
-            float xu = _mesh->point(_mesh->vertex_handle(0))[0]; - _mesh->point(_mesh->vertex_handle(1))[0];
+            float xu = _mesh->point(_mesh->vertex_handle(0))[0] - _mesh->point(_mesh->vertex_handle(1))[0];
             float yu = _mesh->point(_mesh->vertex_handle(0))[1] - _mesh->point(_mesh->vertex_handle(1))[1];
             float zu = _mesh->point(_mesh->vertex_handle(0))[2] - _mesh->point(_mesh->vertex_handle(1))[2];
             //vectorV
@@ -148,6 +158,7 @@ float MainWindow::barycentriqueArea(VertexHandle v, MyMesh *_mesh)
 
             //aire de la face courante
             area += 0.5*sqrt(produitVect[0]*produitVect[0]+produitVect[1]*produitVect[1]+produitVect[2]*produitVect[2]);
+            qDebug()<<"AREA += : "<<area;
 
         }
     }
@@ -447,10 +458,17 @@ void MainWindow::on_pushButton_2_clicked()
 void MainWindow::on_pushButton_cotangent_clicked()
 {
     MyMesh::Point dsum(0,0,0);
+    std::vector<MyMesh::Point> deltasum;
     for(MyMesh::VertexIter v = mesh_.vertices_begin();v!=mesh_.vertices_end();v++)
     {
-        float a = barycentricArea(&mesh_, v->idx());
-        dsum+=1/(2*a) * approximationCot(&mesh_,*v);
+        float a = barycentricArea(&mesh_,v->idx());
+        qDebug()<<"BARYCENTRIC AREA : "<<a;
+        dsum=1/(2*a) * approximationCot(&mesh_,*v);
+        qDebug()<<"DELTA SUM :"<<" x : "<<dsum[0]<<" y : "<<dsum[1]<<" z : "<<dsum[2];
+
+
+        deltasum.push_back(dsum);
     }
-    qDebug()<<"DELTA SUM :"<<dsum[0];
+
+
 }

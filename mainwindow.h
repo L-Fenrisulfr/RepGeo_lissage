@@ -24,13 +24,13 @@ public:
     ~MainWindow();
     double cot(double angle);
     float faceArea(MyMesh* _mesh, int faceID);
+    float angleEE(MyMesh* _mesh, int vertexID,  int faceID);
     float barycentricArea(MyMesh* _mesh, int vertexID);
     float barycentriqueArea(VertexHandle v, MyMesh *_mesh);
     MyMesh::Point approximationCot(MyMesh * _mesh,MyMesh::VertexHandle vh);
     QVector<MyMesh::VertexHandle> sommetOpp(MyMesh *_mesh,MyMesh::VertexHandle pointV, MyMesh::FaceHandle face1, MyMesh::FaceHandle face2);
     MyMesh::VertexHandle getSomOpp(MyMesh * _mesh,MyMesh::FaceHandle face1,
                                    MyMesh::FaceHandle face2, MyMesh::VertexHandle vh);
-    float angleEE(MyMesh* _mesh, int vertexID,  int faceID);
     double angle(MyMesh * _mesh, MyMesh::FaceHandle fh, MyMesh::VertexHandle vertex);
 
     /**
