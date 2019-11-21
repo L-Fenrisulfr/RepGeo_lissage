@@ -16,9 +16,33 @@ double MainWindow::cot(double angle)
     return 1/tan(angle);
 }
 
-void MainWindow::approximationCot(MyMesh *_mesh)
+MyMesh::Point MainWindow::approximationCot(MyMesh *_mesh,MyMesh::VertexHandle vh)
 {
+    MyMesh::Point sum(0.0,0.0,0.0);
 
+        //float a = barycentriqueArea(vh,_mesh);
+
+        QVector<MyMesh::FaceHandle> faces;
+        QVector<MyMesh::VertexHandle> vertexs;
+        for(MyMesh::VertexFaceIter vf = _mesh->vf_begin(vh); vf.is_valid(); vf++)
+        {
+            faces.push_back(*vf);
+        }
+        for(int i = 0;i<faces.size()-1;i++)
+        {
+            if(faces.size()>1)
+            {
+                MyMesh::VertexHandle opp = getSomOpp(_mesh,faces.at(i),faces.at(i+1),vh);
+                //MyMesh::VertexHandle opp = vh;
+                vertexs = sommetOpp(&mesh_,vh,faces.at(i),faces.at(i+1));
+                sum += (angle(_mesh,faces.at(i),vertexs.at(0)) +
+                        angle(_mesh,faces.at(i),vertexs.at(1)) )*
+                        (_mesh->point(vh)-_mesh->point(opp));
+            }
+        }
+        //sum = 1/(2*a) * sum;
+
+    return sum;
 }
 double MainWindow::getTangent(double angle)
 {
@@ -62,7 +86,7 @@ float MainWindow::barycentriqueArea(VertexHandle v, MyMesh *_mesh)
 {
 
     QVector <int> neigborList;
-    QVector<float> produitVect;
+    int produitVect[3];
     float area;
 
     for(MyMesh::VertexFaceIter vf_iter = _mesh->vf_iter(v); vf_iter.is_valid(); vf_iter ++)
@@ -110,7 +134,7 @@ QVector<MyMesh::VertexHandle> MainWindow::sommetOpp(MyMesh *_mesh,
 {
     double distMax = 0;
     QVector<MyMesh::VertexHandle> points;
-    for (MyMesh::FaceEdgeIter fe = _mesh->fe_begin(face1);
+    /*for (MyMesh::FaceEdgeIter fe = _mesh->fe_begin(face1);
          fe.is_valid();fe++)
     {
         MyMesh::HalfedgeHandle he = _mesh->halfedge_handle(fe);
@@ -169,9 +193,80 @@ QVector<MyMesh::VertexHandle> MainWindow::sommetOpp(MyMesh *_mesh,
                 }
             }
         }
+    }*/
+    QVector<MyMesh::VertexHandle> vectf1;
+    QVector<MyMesh::VertexHandle> vectf2;
+    for(MyMesh::FaceVertexIter fv = _mesh->fv_iter(face1);
+        fv.is_valid();fv++)
+    {
+        vectf1.push_back(*fv);
+    }
+    for(MyMesh::FaceVertexIter fv = _mesh->fv_iter(face2);
+        fv.is_valid();fv++)
+    {
+        vectf2.push_back(*fv);
+    }
+    points.push_back(vectf1.at(0));
+    points.push_back(vectf1.at(1));
+    for(int i = 0 ; i< vectf1.size(); i++)
+    {
+        for(int j = 0 ; j< vectf2.size(); j++)
+        {
+            if(vectf1.at(i) == vectf1.at(j))
+            {
+                //qDebug()<<"FIND OPP";
+
+                vectf1.remove(i);
+                vectf2.remove(j);
+                //break;
+            }
+        }
+    }
+    for(int i = 0 ; i< vectf1.size(); i++)
+    {
+        points.push_back(vectf1.at(i));
+
+    }
+    for(int j = 0 ; j< vectf2.size(); j++)
+    {
+        points.push_back(vectf2.at(j));
     }
     return points;
 }
+
+MyMesh::VertexHandle MainWindow::getSomOpp(MyMesh *_mesh, MyMesh::FaceHandle face1,
+                                           MyMesh::FaceHandle face2, MyMesh::VertexHandle vh)
+{
+    QVector<MyMesh::VertexHandle> vectf1;
+    QVector<MyMesh::VertexHandle> vectf2;
+    MyMesh::VertexHandle opp;
+    for(MyMesh::FaceVertexIter fv = _mesh->fv_iter(face1);
+        fv.is_valid();fv++)
+    {
+        vectf1.push_back(*fv);
+    }
+    for(MyMesh::FaceVertexIter fv = _mesh->fv_iter(face2);
+        fv.is_valid();fv++)
+    {
+        vectf2.push_back(*fv);
+    }
+    opp = vectf1.at(0);
+    for(int i = 0 ; i< vectf1.size(); i++)
+    {
+        for(int j = 0 ; j< vectf2.size(); j++)
+        {
+            if(vectf1.at(i) == vectf1.at(j) && vectf1.at(i)!=vh)
+            {
+                //qDebug()<<"FIND OPP";
+                opp = vectf1.at(i);
+                return opp;
+                //break;
+            }
+        }
+    }
+    return opp;
+}
+
 
 double MainWindow::angle(MyMesh *_mesh, MyMesh::FaceHandle fh, MyMesh::VertexHandle vertex)
 {
@@ -215,7 +310,7 @@ double MainWindow::angle(MyMesh *_mesh, MyMesh::FaceHandle fh, MyMesh::VertexHan
         V2[0] = V2[0]/norme[1];
         V2[1] = V2[1]/norme[1];
         V2[2] = V2[2]/norme[1];
-        float a = V1[0]*V2[0+3];
+        float a = V1[0]*V2[0];//+3];
         float b = V1[1]*V2[1];
         float c = V1[2]*V2[2];
 
@@ -293,6 +388,17 @@ void MainWindow::on_pushButton_2_clicked()
     {
         cols[c] = 0.5; cols[c+1] = 0.5; cols[c+2] = 0.5;
     }
-
+    this->mesh_ = mesh;
     ui->widget->loadMesh((GLfloat*)mesh.points(), cols, mesh.n_vertices() * 3, IndiceArray, mesh.n_faces() * 3);
+}
+
+void MainWindow::on_pushButton_cotangent_clicked()
+{
+    MyMesh::Point dsum(0,0,0);
+    for(MyMesh::VertexIter v = mesh_.vertices_begin();v!=mesh_.vertices_end();v++)
+    {
+        float a = barycentriqueArea(*v,&mesh_);
+        dsum+=1/(2*a) * approximationCot(&mesh_,*v);
+    }
+    qDebug()<<"DELTA SUM :"<<dsum[0];
 }
