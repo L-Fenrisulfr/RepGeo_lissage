@@ -82,6 +82,36 @@ double MainWindow::somCots(MyMesh * _mesh, unsigned int v_idx, unsigned int vi_i
     getHalfEdgesHandle(_mesh, eh, heh);
     getFaceHandle(_mesh, heh[0]);
 }
+
+float MainWindow::faceArea(MyMesh* _mesh, int faceID)
+{
+    /* **** à compléter ! **** */
+    qDebug() << __FUNCTION__;
+
+    QVector<MyMesh::Point> * listPoints = new QVector<MyMesh::Point>();
+    for (MyMesh::FaceVertexIter curVert = _mesh->fv_iter(_mesh->face_handle(static_cast<unsigned int>(faceID))); curVert.is_valid(); curVert ++) {
+        //qDebug() << "    vertID :" << (*curVert).idx();
+        listPoints->push_back(_mesh->point(*curVert));
+    }
+
+    float aire = ( ((listPoints->at(1) - listPoints->at(0)) % (listPoints->at(2) - listPoints->at(0))) / 2 ).norm();
+
+    listPoints->clear();
+    delete listPoints;
+
+    return aire;
+}
+
+float MainWindow::barycentricArea(MyMesh* _mesh, int vertexID)
+{
+    float barycentric_area = 0.0;
+
+    for(MyMesh::VertexFaceIter curFace = _mesh->vf_iter(_mesh->vertex_handle(static_cast<unsigned int>(vertexID))); curFace.is_valid(); curFace++)
+        barycentric_area += faceArea(_mesh, curFace->idx());
+
+    return barycentric_area/3;
+}
+
 float MainWindow::barycentriqueArea(VertexHandle v, MyMesh *_mesh)
 {
 
