@@ -40,8 +40,10 @@ MyMesh::Point MainWindow::approximationCot(MyMesh *_mesh,MyMesh::VertexHandle vh
                 //MyMesh::VertexHandle opp = vh;
                 vertexs = sommetOpp(&mesh_,vh,faces.at(i),faces.at(i+1));
                 sum += (cot(angleEE(_mesh,oppA.idx(),faces.at(i).idx())) +
-                        cot(angleEE(_mesh,oppB.idx(),faces.at(i).idx()))) *
+                        cot(angleEE(_mesh,oppB.idx(),faces.at(i+1).idx()))) *
                         (_mesh->point(opp)-_mesh->point(vh));
+                qDebug()<<"SUM + = :"<<" x : "<<sum[0]<<" y : "<<sum[1]<<" z : "<<sum[2];
+                qDebug()<<"ANFLE ALPHA : "<<cot(angleEE(_mesh,oppA.idx(),faces.at(i).idx()));
             }
             else
             {
@@ -327,7 +329,8 @@ float MainWindow::angleEE(MyMesh* _mesh, int vertexID,  int faceID)
     //qDebug() << __FUNCTION__ << "angle :" << angle;
     listPoints->clear();
     delete listPoints;
-
+    if(angle < 0)
+        angle = -angle;
     return angle;
 }
 
@@ -431,7 +434,9 @@ void MainWindow::on_pushButton_2_clicked()
 {
     // Cet exemple montre comment ouvrir un .obj, et l'afficher dans le MeshViewerWidget
     MyMesh mesh;
-    OpenMesh::IO::read_mesh(mesh, "../meshFiles/bunnyLowPoly.obj");
+    //OpenMesh::IO::read_mesh(mesh, "../meshFiles/NoisybunnyLowPoly.obj");
+    OpenMesh::IO::read_mesh(mesh, "../meshFiles/NoisySphere.obj");
+
 
     GLuint* IndiceArray = new GLuint[mesh.n_faces() * 3];
 
@@ -452,6 +457,7 @@ void MainWindow::on_pushButton_2_clicked()
         cols[c] = 0.5; cols[c+1] = 0.5; cols[c+2] = 0.5;
     }
     this->mesh_ = mesh;
+    //mesh_.set_color(mesh_.vertex_handle(1),MyMesh::Color(255,0,0));
     ui->widget->loadMesh((GLfloat*)mesh.points(), cols, mesh.n_vertices() * 3, IndiceArray, mesh.n_faces() * 3);
 }
 
@@ -466,7 +472,6 @@ void MainWindow::on_pushButton_cotangent_clicked()
         dsum=1/(2*a) * approximationCot(&mesh_,*v);
         qDebug()<<"DELTA SUM :"<<" x : "<<dsum[0]<<" y : "<<dsum[1]<<" z : "<<dsum[2];
 
-
         deltasum.push_back(dsum);
     }
     GLuint* IndiceArray = new GLuint[mesh_.n_faces() * 3];
@@ -480,7 +485,10 @@ void MainWindow::on_pushButton_cotangent_clicked()
         MyMesh::Point x = mesh_.point(*v);
         float h = 0.01;
         float y = 0.01;
-        mesh_.point(*v) = x + h * y * deltasum.at(i);
+        float inter = 100;
+        if(deltasum.at(i)[0]<inter && deltasum.at(i)[1]<inter && deltasum.at(i)[2]<inter &&
+                deltasum.at(i)[0]>-inter && deltasum.at(i)[1]>-inter && deltasum.at(i)[2]>-inter)
+            mesh_.point(*v) = x + h * y * deltasum.at(i);
         i++;
     }
 
@@ -498,4 +506,65 @@ void MainWindow::on_pushButton_cotangent_clicked()
         cols[c] = 0.5; cols[c+1] = 0.5; cols[c+2] = 0.5;
     }
     ui->widget->loadMesh((GLfloat*)mesh_.points(), cols, mesh_.n_vertices() * 3, IndiceArray, mesh_.n_faces() * 3);
+}
+
+void MainWindow::collapseEdge(MyMesh* _mesh, int edgeID)
+{
+    /* **** à compléter ! (Partie 1) ****
+     * cette fonction utilise l'opérateur collapse pour supprimer l'arête d'index edgeID
+     * Attention à ne pas oublier garbage_collection() !
+     */
+
+
+        // Collapse edge
+    _mesh->edge_handle(edgeID);
+    _mesh->edge_handle(edgeID);
+    MyMesh::HalfedgeHandle heh= _mesh->halfedge_handle(_mesh->edge_handle(edgeID),0);
+    MyMesh::VertexHandle v1 = _mesh->to_vertex_handle(heh);
+    MyMesh::VertexHandle v0 = _mesh->from_vertex_handle(heh);
+    MyMesh::Point point0 = _mesh->point(v0);
+    MyMesh::Point point1 = _mesh->point(v1);
+
+    MyMesh::Point point = (point1 + point0)/2;
+    _mesh->point(v1) = point;
+    _mesh->collapse(heh);
+
+
+    // permet de nettoyer le maillage et de garder la cohérence des indices après un collapse
+    _mesh->garbage_collection();
+}
+
+void MainWindow::splitEdge(MyMesh* _mesh, int edgeID)
+{
+    /* **** à compléter ! (Partie 1) ****
+     * cette fonction utilise l'opérateur collapse pour supprimer l'arête d'index edgeID
+     * Attention à ne pas oublier garbage_collection() !
+     */
+
+
+        // Collapse edge
+    _mesh->edge_handle(edgeID);
+    _mesh->edge_handle(edgeID);
+    MyMesh::HalfedgeHandle heh= _mesh->halfedge_handle(_mesh->edge_handle(edgeID),0);
+    MyMesh::VertexHandle v1 = _mesh->to_vertex_handle(heh);
+    MyMesh::VertexHandle v0 = _mesh->from_vertex_handle(heh);
+    MyMesh::Point point0 = _mesh->point(v0);
+    MyMesh::Point point1 = _mesh->point(v1);
+
+    MyMesh::Point point = (point1 + point0)/2;
+    _mesh->point(v1) = point;
+    _mesh->split(_mesh->edge_handle(edgeID),point);
+
+
+    // permet de nettoyer le maillage et de garder la cohérence des indices après un collapse
+    _mesh->garbage_collection();
+}
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    for (MyMesh::EdgeIter e = mesh_.edges_begin();e != mesh_.edges_end();e++)
+    {
+
+    }
+    splitEdge(&mesh_, 1);
 }

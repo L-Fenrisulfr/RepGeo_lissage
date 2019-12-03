@@ -54,6 +54,9 @@ public:
     void getHalfEdgesHandle(MyMesh *_mesh, EdgeHandle eh, HalfedgeHandle * heh);
 
     double somCots(MyMesh * _mesh, unsigned int v_idx, unsigned int vi_idx);
+
+    void collapseEdge(MyMesh* _mesh, int edgeID);
+    void splitEdge(MyMesh* _mesh, int edgeID);
     MyMesh mesh_;
 private slots:
     void on_pushButton_clicked();
@@ -61,6 +64,8 @@ private slots:
     void on_pushButton_2_clicked();
 
     void on_pushButton_cotangent_clicked();
+
+    void on_pushButton_3_clicked();
 
 private:
     Ui::MainWindow *ui;
